@@ -1,0 +1,39 @@
+# OS Specific
+.DS_Store
+Thumbs.db
+*.swp
+
+# IDE Specific
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Frontend (React)
+frontend/node_modules/
+frontend/build/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Backend (Django)
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+backend/venv/
+backend/.env
+backend/.python-version
+backend/pip-log.txt
+backend/pip-delete-this-directory.txt
+backend/celerybeat-schedule
+backend/.cache/
+
+# Vercel
+.vercel/
