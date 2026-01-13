@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
@@ -24,39 +24,40 @@ const EditRoom = () => {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [newImage, setNewImage] = useState(null);
 
-    useEffect(() => {
-        const fetchRoomDetails = async () => {
-            try {
-                const response = await fetch(`http://localhost:8000/api/rooms/${id}/`);
-                if (!response.ok) throw new Error('Room not found');
-                const data = await response.json();
+    const fetchRoomDetails = useCallback(async () => {
+        if (!user) return;
+        try {
+            const response = await fetch(`/api/rooms/${id}/`);
+            if (!response.ok) throw new Error('Room not found');
+            const data = await response.json();
 
-                // Verify ownership (optional but good practice)
-                if (data.owner_id !== user.id) {
-                    setMessage({ type: 'error', text: 'You do not have permission to edit this room.' });
-                    setLoading(false);
-                    return;
-                }
-
-                setFormData({
-                    title: data.title,
-                    location: data.location,
-                    price: data.price,
-                    type: data.type,
-                    preference: data.preference,
-                    contact: data.contact,
-                    image: data.image
-                });
-            } catch (error) {
-                console.error("Fetch error:", error);
-                setMessage({ type: 'error', text: 'Failed to load room details.' });
-            } finally {
+            // Verify ownership
+            if (data.owner_id !== user.id) {
+                setMessage({ type: 'error', text: 'You do not have permission to edit this room.' });
                 setLoading(false);
+                return;
             }
-        };
 
-        if (user) fetchRoomDetails();
+            setFormData({
+                title: data.title,
+                location: data.location,
+                price: data.price,
+                type: data.type,
+                preference: data.preference,
+                contact: data.contact,
+                image: data.image
+            });
+        } catch (error) {
+            console.error("Fetch error:", error);
+            setMessage({ type: 'error', text: 'Failed to load room details.' });
+        } finally {
+            setLoading(false);
+        }
     }, [id, user]);
+
+    useEffect(() => {
+        fetchRoomDetails();
+    }, [fetchRoomDetails]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -102,7 +103,7 @@ const EditRoom = () => {
                 role: role
             };
 
-            const response = await fetch(`http://localhost:8000/api/rooms/${id}/`, {
+            const response = await fetch(`/api/rooms/${id}/`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

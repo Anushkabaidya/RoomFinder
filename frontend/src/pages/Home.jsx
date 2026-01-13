@@ -28,7 +28,7 @@ const Home = () => {
             if (type !== 'Any') params.append('type', type);
             if (pref !== 'Any') params.append('preference', pref);
 
-            const url = `http://localhost:8000/api/rooms/?${params.toString()}`;
+            const url = `/api/rooms/?${params.toString()}`;
 
             const response = await fetch(url);
             if (!response.ok) {

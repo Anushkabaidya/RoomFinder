@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
-    const navigate = useNavigate();
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -17,7 +17,7 @@ const Login = () => {
             const { error } = await supabase.auth.signInWithOtp({
                 email,
                 options: {
-                    emailRedirectTo: 'http://localhost:3000/'
+                    emailRedirectTo: window.location.origin
                 }
             });
 

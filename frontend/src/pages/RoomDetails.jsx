@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,30 +10,30 @@ const RoomDetails = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchRoomDetails = async () => {
-            try {
-                const response = await fetch(`http://localhost:8000/api/rooms/${id}/`);
-                if (!response.ok) {
-                    throw new Error('Room not found');
-                }
-                const data = await response.json();
-                setRoom(data);
-            } catch (err) {
-                console.error("Error fetching room details:", err);
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
+    const fetchRoomDetails = useCallback(async () => {
+        try {
+            const response = await fetch(`/api/rooms/${id}/`);
+            if (!response.ok) {
+                throw new Error('Room not found');
             }
-        };
-
-        fetchRoomDetails();
+            const data = await response.json();
+            setRoom(data);
+        } catch (err) {
+            console.error("Error fetching room details:", err);
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
     }, [id]);
+
+    useEffect(() => {
+        fetchRoomDetails();
+    }, [fetchRoomDetails]);
 
     const handleDelete = async () => {
         if (window.confirm("Are you sure you want to delete this room? This action cannot be undone.")) {
             try {
-                const response = await fetch(`http://localhost:8000/api/rooms/${id}/`, {
+                const response = await fetch(`/api/rooms/${id}/`, {
                     method: 'DELETE'
                 });
 

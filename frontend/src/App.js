@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -17,6 +17,7 @@ import './App.css';
 const RoleGuard = ({ children, allowedRoles, allowGuest = false }) => {
   const { user, role, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading application...</div>;
 
@@ -37,7 +38,7 @@ const RoleGuard = ({ children, allowedRoles, allowGuest = false }) => {
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h2>Access Denied</h2>
         <p>Only room owners can access this page.</p>
-        <button className="nav-btn" onClick={() => window.location.href = '/'}>Back to Home</button>
+        <button className="nav-btn" onClick={() => navigate('/')}>Back to Home</button>
       </div>
     );
   }

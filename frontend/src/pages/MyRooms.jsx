@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -8,18 +8,10 @@ const MyRooms = () => {
     const [myRooms, setMyRooms] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-            fetchMyRooms();
-        } else {
-            setIsLoading(false);
-            setMyRooms([]);
-        }
-    }, [user]);
-
-    const fetchMyRooms = async () => {
+    const fetchMyRooms = useCallback(async () => {
+        if (!user) return;
         try {
-            const response = await fetch(`http://localhost:8000/api/rooms/?owner_id=${user.id}`);
+            const response = await fetch(`/api/rooms/?owner_id=${user.id}`);
             if (!response.ok) throw new Error('Failed to fetch rooms');
             const data = await response.json();
             setMyRooms(data.results || data);
@@ -28,7 +20,16 @@ const MyRooms = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            fetchMyRooms();
+        } else {
+            setIsLoading(false);
+            setMyRooms([]);
+        }
+    }, [user, fetchMyRooms]);
 
     const handleDelete = async (id) => {
         if (window.confirm("Are you sure you want to delete this room?")) {

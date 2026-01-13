@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext();
@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const fetchIdRef = useRef(0);
 
-    const fetchProfile = async (userId, userMetadata = null, email = null) => {
+    const fetchProfile = useCallback(async (userId, userMetadata = null, email = null) => {
         const thisFetchId = ++fetchIdRef.current;
 
         try {
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
             console.error("Fetch profile failed:", err);
             setRole(null);
         }
-    };
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -92,13 +92,13 @@ export const AuthProvider = ({ children }) => {
             isMounted = false;
             subscription.unsubscribe();
         };
-    }, []);
+    }, [fetchProfile]);
 
     const value = {
         session,
         user,
         role,
-        refreshRole: () => fetchProfile(user?.id),
+        refreshRole: () => user ? fetchProfile(user.id) : null,
         signOut: () => supabase.auth.signOut(),
     };
 

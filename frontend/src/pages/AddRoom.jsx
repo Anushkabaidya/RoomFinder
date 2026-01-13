@@ -117,7 +117,7 @@ const AddRoom = () => {
             };
 
             console.log("Step 2: Sending payload to backend:", payload);
-            const response = await fetch('http://localhost:8000/api/rooms/', {
+            const response = await fetch('/api/rooms/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

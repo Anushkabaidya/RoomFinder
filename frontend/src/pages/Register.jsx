@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 const Register = () => {
@@ -7,7 +7,7 @@ const Register = () => {
     const [role, setRole] = useState('room_finder'); // Default role
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
-    const navigate = useNavigate();
+
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -19,7 +19,7 @@ const Register = () => {
             const { error } = await supabase.auth.signInWithOtp({
                 email,
                 options: {
-                    emailRedirectTo: 'http://localhost:3000/',
+                    emailRedirectTo: window.location.origin,
                     data: {
                         role: role
                     }
