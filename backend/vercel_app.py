@@ -1,4 +1,8 @@
-from room_finder.wsgi import application
+import os
+import sys
 
-# This is the object that Vercel will use to handle requests
+# Ensure the project directory is in the path
+sys.path.append(os.path.dirname(__file__))
+
+from room_finder.wsgi import application
 app = application
