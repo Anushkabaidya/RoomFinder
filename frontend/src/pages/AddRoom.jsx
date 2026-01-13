@@ -87,9 +87,14 @@ const AddRoom = () => {
                 const filePath = `${user.id}/${fileName}`;
 
                 console.log(`[AddRoom] Uploading image: ${file.name} to path: ${filePath}`);
-                const { error: uploadError } = await supabase.storage
-                    .from('Room Images')
-                    .upload(filePath, file);
+
+                // Add a 30s timeout to the upload
+                const uploadPromise = supabase.storage.from('Room Images').upload(filePath, file);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Storage Upload Timeout (30s exceeded)")), 30000)
+                );
+
+                const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
 
                 if (uploadError) {
                     console.error("[AddRoom] Supabase Storage Error:", uploadError);
@@ -107,7 +112,7 @@ const AddRoom = () => {
                 console.log("[AddRoom] No image selected for upload.");
             }
 
-            // 2. Submit Data to Backend
+            // 2. Submit Data to Backend (with 15s timeout)
             const payload = {
                 title: formData.title,
                 location: formData.location,
@@ -120,7 +125,9 @@ const AddRoom = () => {
                 role: role
             };
 
-            console.log("[AddRoom] Sending final payload to API:", payload);
+            console.log("[AddRoom] Sending final payload to API with timeout...", payload);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
             const response = await fetch('/api/rooms/', {
                 method: 'POST',
@@ -128,7 +135,9 @@ const AddRoom = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             console.log(`[AddRoom] API Response Status: ${response.status}`);
 

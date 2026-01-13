@@ -75,13 +75,29 @@ export const AuthProvider = ({ children }) => {
 
         // Consolidate both initial session and auth changes
         const setupAuth = async () => {
-            const { data: { session: initialSession } } = await supabase.auth.getSession();
+            const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
             if (isMounted) {
+                if (sessionError) {
+                    console.error("[Auth] Session fetch error:", sessionError);
+                    setLoading(false);
+                    return;
+                }
+
                 setSession(initialSession);
                 const currentUser = initialSession?.user ?? null;
                 setUser(currentUser);
 
                 if (currentUser) {
+                    console.log("[Auth] Initial Session user detected:", currentUser.id);
+                    // CRITICAL: Set role from metadata immediately if available
+                    // This fixes the "First Go" issue by making the role available instantly
+                    const metadataRole = currentUser.user_metadata?.role;
+                    if (metadataRole) {
+                        console.log(`[Auth] Pre-setting role from metadata: ${metadataRole}`);
+                        setRole(metadataRole);
+                    }
+
+                    // Fetch profile to verify/persist
                     await fetchProfile(currentUser.id, currentUser.user_metadata, currentUser.email);
                 } else {
                     setLoading(false);
@@ -93,12 +109,21 @@ export const AuthProvider = ({ children }) => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!isMounted) return;
+            console.log(`[Auth] Auth event: ${event}`);
 
             setSession(session);
-            setUser(session?.user ?? null);
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
 
-            if (session?.user) {
-                await fetchProfile(session.user.id, session.user.user_metadata, session.user.email);
+            if (currentUser) {
+                // If it's a login/signup, ensure we start with a clean loading state if needed
+                // OR just use the metadata role instantly
+                const metadataRole = currentUser.user_metadata?.role;
+                if (metadataRole) {
+                    console.log(`[Auth] Syncing role from metadata on event: ${metadataRole}`);
+                    setRole(metadataRole);
+                }
+                await fetchProfile(currentUser.id, currentUser.user_metadata, currentUser.email);
             } else {
                 setRole(null);
                 setLoading(false);
