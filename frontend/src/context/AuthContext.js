@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
 
     const fetchProfile = useCallback(async (userId, userMetadata = null, email = null) => {
         const thisFetchId = ++fetchIdRef.current;
+        console.log(`[Auth] Fetching profile for ${userId} (Fetch ID: ${thisFetchId})`);
 
         try {
             // 1. Try to fetch existing profile
@@ -24,13 +25,22 @@ export const AuthProvider = ({ children }) => {
             // If a newer fetch has started, ignore this one
             if (thisFetchId !== fetchIdRef.current) return;
 
+            if (data) {
+                console.log(`[Auth] Profile found. Role: ${data.role}`);
+                setRole(data.role);
+                return;
+            }
+
+            // 2. If no profile, check metadata for auto-creation
             if (error && error.code === 'PGRST116') {
+                console.log("[Auth] No profile record found. checking metadata...");
                 const metadataRole = userMetadata?.role;
 
                 if (metadataRole) {
+                    console.log(`[Auth] Creating profile from metadata role: ${metadataRole}`);
                     const { data: newData, error: insertError } = await supabase
                         .from('profiles')
-                        .insert([{
+                        .upsert([{
                             id: userId,
                             role: metadataRole,
                             email: email || userMetadata?.email || null
@@ -40,19 +50,23 @@ export const AuthProvider = ({ children }) => {
                     if (!insertError && newData && newData.length > 0) {
                         setRole(newData[0].role);
                         return;
+                    } else if (insertError) {
+                        console.error("[Auth] Metadata upsert failed:", insertError);
                     }
                 }
+                console.log("[Auth] No role found in metadata either.");
                 setRole(null);
             } else if (error) {
-                console.warn("Profile fetch error:", error.message);
+                console.warn("[Auth] Profile fetch error:", error.message);
                 setRole(null);
-            } else {
-                setRole(data?.role);
             }
         } catch (err) {
-            if (err.name === 'AbortError') return; // Silence abort errors
-            console.error("Fetch profile failed:", err);
+            console.error("[Auth] Unexpected fetch profile failure:", err);
             setRole(null);
+        } finally {
+            if (thisFetchId === fetchIdRef.current) {
+                setLoading(false);
+            }
         }
     }, []);
 
@@ -64,11 +78,14 @@ export const AuthProvider = ({ children }) => {
             const { data: { session: initialSession } } = await supabase.auth.getSession();
             if (isMounted) {
                 setSession(initialSession);
-                setUser(initialSession?.user ?? null);
-                if (initialSession?.user) {
-                    await fetchProfile(initialSession.user.id, initialSession.user.user_metadata, initialSession.user.email);
+                const currentUser = initialSession?.user ?? null;
+                setUser(currentUser);
+
+                if (currentUser) {
+                    await fetchProfile(currentUser.id, currentUser.user_metadata, currentUser.email);
+                } else {
+                    setLoading(false);
                 }
-                setLoading(false);
             }
         };
 

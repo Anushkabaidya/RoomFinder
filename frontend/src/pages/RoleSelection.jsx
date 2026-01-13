@@ -10,23 +10,31 @@ const RoleSelection = () => {
     const [error, setError] = useState(null);
 
     const handleRoleSelect = async (selectedRole) => {
+        if (!user) return;
         setLoading(true);
         setError(null);
 
         try {
-            const { error: insertError } = await supabase
+            console.log(`[RoleSelection] Assigning role: ${selectedRole} for user: ${user.id}`);
+            const { error: upsertError } = await supabase
                 .from('profiles')
-                .insert([{ id: user.id, role: selectedRole }]);
+                .upsert({
+                    id: user.id,
+                    role: selectedRole,
+                    email: user.email
+                });
 
-            if (insertError) {
-                setError(insertError.message);
+            if (upsertError) {
+                console.error("[RoleSelection] Upsert error:", upsertError);
+                setError(upsertError.message);
             } else {
+                console.log("[RoleSelection] Role assigned successfully. Refreshing context...");
                 await refreshRole();
                 navigate('/');
             }
         } catch (err) {
             setError('An unexpected error occurred. Please try again.');
-            console.error(err);
+            console.error("[RoleSelection] Unexpected error:", err);
         } finally {
             setLoading(false);
         }

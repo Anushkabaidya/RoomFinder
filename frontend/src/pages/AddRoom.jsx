@@ -77,30 +77,34 @@ const AddRoom = () => {
         let imageUrl = '';
 
         try {
-            console.log("Step 1: Checking for image upload...");
+            console.log("[AddRoom] Starting submission process...");
+
             // 1. Upload Image to Supabase Storage
             if (formData.images && formData.images.length > 0) {
                 const file = formData.images[0];
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${Math.random()}.${fileExt}`;
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                 const filePath = `${user.id}/${fileName}`;
 
-                console.log("Uploading to 'Room Images' bucket...");
+                console.log(`[AddRoom] Uploading image: ${file.name} to path: ${filePath}`);
                 const { error: uploadError } = await supabase.storage
                     .from('Room Images')
                     .upload(filePath, file);
 
                 if (uploadError) {
-                    console.error("Supabase Upload Error:", uploadError);
-                    throw new Error(`Failed to upload image: ${uploadError.message}`);
+                    console.error("[AddRoom] Supabase Storage Error:", uploadError);
+                    throw new Error(`Cloud Storage Error: ${uploadError.message}. Please check if the 'Room Images' bucket exists and has public access.`);
                 }
 
+                console.log("[AddRoom] Image upload successful, getting public URL...");
                 const { data: { publicUrl } } = supabase.storage
                     .from('Room Images')
                     .getPublicUrl(filePath);
 
                 imageUrl = publicUrl;
-                console.log("Image uploaded. URL:", imageUrl);
+                console.log("[AddRoom] Public URL obtained:", imageUrl);
+            } else {
+                console.log("[AddRoom] No image selected for upload.");
             }
 
             // 2. Submit Data to Backend
@@ -116,7 +120,8 @@ const AddRoom = () => {
                 role: role
             };
 
-            console.log("Step 2: Sending payload to backend:", payload);
+            console.log("[AddRoom] Sending final payload to API:", payload);
+
             const response = await fetch('/api/rooms/', {
                 method: 'POST',
                 headers: {
@@ -125,24 +130,35 @@ const AddRoom = () => {
                 body: JSON.stringify(payload),
             });
 
-            console.log("Response status:", response.status);
+            console.log(`[AddRoom] API Response Status: ${response.status}`);
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("Backend Error Details:", errorData);
-                throw new Error('Failed to save room details on server');
+                const errorBody = await response.text();
+                let errorDetails = "";
+                try {
+                    const parsed = JSON.parse(errorBody);
+                    errorDetails = JSON.stringify(parsed);
+                } catch (e) {
+                    errorDetails = errorBody;
+                }
+                console.error("[AddRoom] API POST failed:", errorDetails);
+                throw new Error(`Server ignored the request (${response.status}). Details: ${errorDetails}`);
             }
 
-            // SUCCESS FLOW
-            console.log("SUCCESS: Room added.");
+            console.log("[AddRoom] SUCCESS! Room saved to database.");
             setIsSuccess(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
         } catch (error) {
-            console.error("Submission HANG or FAILURE:", error);
-            setMessage({ type: 'error', text: `Failed to add room: ${error.message}. Please check if you are connected to the database.` });
+            console.error("[AddRoom] CRITICAL FAILURE:", error);
+            setMessage({
+                type: 'error',
+                text: `Submission Failed: ${error.message}. Check browser console (F12) for detailed logs.`
+            });
+            // Fallback alert for production visibility
+            alert(`Error: ${error.message}`);
         } finally {
-            console.log("Process complete. Resetting submission state.");
+            console.log("[AddRoom] Process complete. Re-enabling button.");
             setIsSubmitting(false);
         }
     };
