@@ -132,9 +132,16 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://room-finder-txkd.vercel.app",
 ]
 
-# Allow all Vercel subdomains for CORS in production
-CORS_ALLOWED_ORIGIN_REGEXES = [
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = [
+    "https://room-finder-txkd.vercel.app",
+    "http://localhost:3000",
+]
+
+# Allow all Vercel subdomains for CSRF in production
+CSRF_TRUSTED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
 ]
